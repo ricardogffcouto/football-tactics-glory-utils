@@ -1,0 +1,7 @@
+skills/*
+screenshots/*
+player_lists/*
+datasets/*
+models/*
+.idea/*
+**/__pycache__

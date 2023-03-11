@@ -1,9 +1,12 @@
-DEBUG = False
-#DEBUG = True
+import os
 
-SCREENSHOT_PATH = "screenshots"
-SKILLS_MODEL_FILE = "models/skills.h5"
-SKILL_LEVEL_MODEL_FILE = "models/skill_level.h5"
+DEBUG = False
+
+CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
+
+SCREENSHOT_PATH = f"{CURRENT_PATH}/screenshots"
+SKILLS_MODEL_FILE = f"{CURRENT_PATH}/models/skills.h5"
+SKILL_LEVEL_MODEL_FILE = f"{CURRENT_PATH}/models/skill_level.h5"
 
 TARGET_SIZE = (224, 224)
 

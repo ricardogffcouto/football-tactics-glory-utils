@@ -4,6 +4,7 @@ import uuid
 import cv2
 import re
 
+import pandas as pd
 import pytesseract as pyt
 from keras.utils import load_img, img_to_array
 
@@ -121,6 +122,22 @@ class Player:
             if self.ctr and self.ctr > allowed:
                 self.ctr = None
 
+
+@dataclass
+class Parser:
+    def save_players(self, players):
+        df = pd.DataFrame(players)
+        df.to_csv(f"{CURRENT_PATH}/players_{uuid.uuid4()}.csv", index=False)
+    def parse(self):
+        team_ids = os.listdir(SCREENSHOT_PATH)
+        players = []
+        batch_size = 1000
+        for team_id in team_ids:
+            team = TeamParser(team_id)
+            players += team.parse_players()
+            if len(players) > batch_size:
+                self.save_players(players)
+                players = []
 
 
 @dataclass

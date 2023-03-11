@@ -2,6 +2,8 @@ DEBUG = False
 #DEBUG = True
 
 SCREENSHOT_PATH = "screenshots"
+SKILLS_MODEL_FILE = "models/skills.h5"
+SKILL_LEVEL_MODEL_FILE = "models/skill_level.h5"
 
 TARGET_SIZE = (224, 224)
 

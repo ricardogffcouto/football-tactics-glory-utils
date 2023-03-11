@@ -7,16 +7,15 @@ import re
 import pytesseract as pyt
 from keras.utils import load_img, img_to_array
 
-from constants import POSITIONS, SCREENSHOT_PATH, PLAYERS_PER_LIST, TARGET_SIZE, SKILLS, SKILL_LEVEL, SKILL_POT, \
-    PLAYERS_TABLE, MAX_GIFT, PLAYER_COORDINATES, SPLIT_PLAYER_KEYS
+from constants import *
 
 from dataclasses import dataclass, field
 from PIL import Image
 from keras.models import load_model
 import numpy as np
 
-skills_model = load_model('models/skills.h5')
-skill_level_model = load_model('models/skill_level.h5')
+skills_model = load_model(SKILLS_MODEL_FILE)
+skill_level_model = load_model(SKILL_LEVEL_MODEL_FILE)
 
 def clean(text):
     if isinstance(text, str):

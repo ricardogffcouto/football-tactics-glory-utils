@@ -7,6 +7,7 @@ CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 SCREENSHOT_PATH = f"{CURRENT_PATH}/screenshots"
 SKILLS_MODEL_FILE = f"{CURRENT_PATH}/models/skills.h5"
 SKILL_LEVEL_MODEL_FILE = f"{CURRENT_PATH}/models/skill_level.h5"
+PLAYER_LISTS_PATH = f"{CURRENT_PATH}/player_lists"
 
 TARGET_SIZE = (224, 224)
 

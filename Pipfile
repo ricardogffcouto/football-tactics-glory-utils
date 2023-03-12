@@ -11,6 +11,7 @@ pyautogui = "*"
 tensorflow = "*"
 sklearn = "*"
 scipy = "*"
+streamlit = "*"
 
 [dev-packages]
 

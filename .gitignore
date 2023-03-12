@@ -6,3 +6,5 @@ models/*
 .idea/*
 .ipynb_checkpoints/
 **/__pycache__
+Pipfile
+Pipfile.lock

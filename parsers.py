@@ -1,10 +1,8 @@
-import os
 import uuid
 
 import cv2
 import re
 
-import pandas as pd
 import pytesseract as pyt
 from keras.utils import load_img, img_to_array
 

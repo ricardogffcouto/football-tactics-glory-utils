@@ -20,6 +20,8 @@ if os.path.exists(f"{MODELS_PATH}/skills.h5") and os.path.exists(f"{MODELS_PATH}
     pass
 else:
     with st.spinner("Please wait we are downloading required models..."):
+        if not os.path.exists(MODELS_PATH):
+            os.mkdir(MODELS_PATH)
         urllib.request.urlretrieve(
             "https://www.dropbox.com/s/mhiirik85zlpl0u/skills.h5?dl=1", f"{MODELS_PATH}/skills.h5"
         )

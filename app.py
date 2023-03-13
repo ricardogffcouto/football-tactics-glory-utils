@@ -3,7 +3,7 @@ import streamlit as st
 
 
 
-st_utils('Utilities')
+st_utils.header('Utilities')
 st.write("### 1. Team Parser")
 st.write("""
 The team parser is used to parse the teams from the screenshots.\n

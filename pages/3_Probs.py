@@ -4,23 +4,23 @@ import random
 
 def probs(a, b, c=1):
     prob = 0
-    for i in range(500000):
+    times_run = 100000
+    for i in range(times_run):
         for j in range(c):
             x = random.randint(1, a)
             y = random.randint(1, b)
             if x >= y:
                 prob += 1
                 break
-    return round(prob / 10000, 1)
+    st.write(f"### {round(prob * 100 / times_run, 1)} % success")
 
-st_utils('Probability Calculator')
+class RNGType:
+    NORMAL: str = "Normal"
+    REALISTIC: str = "Realistic (30%)"
 
-    print("Calculate probability")
-    a = int(input("Your action:"))
-    b = int(input("Def. action:"))
-    c = input("Times?:")
-    if c == "":
-        c = 1
-    else:
-        c = int(c)
-    print(probs(a, b, c))
+st_utils.header('Probability Calculator')
+st.selectbox("RNG Type", [RNGType.NORMAL, RNGType.REALISTIC])
+active = st.number_input("Active action", min_value=1, max_value=None)
+passive = st.number_input("Passive action", min_value=1, max_value=None)
+times = st.selectbox("Times", [1, 2, 3])
+st.button("Calculate probability", on_click=probs, args=(active, passive, times))

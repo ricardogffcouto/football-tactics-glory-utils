@@ -2,15 +2,16 @@ import shutil
 import streamlit as st
 import pandas as pd
 import datetime
-from parsers import TeamParser
 import uuid
-from constants import *
+
 import io
 import zipfile
 import os
-from utils import streamlit as st_utils
 import urllib.request
 
+from utils import streamlit as st_utils
+from constants import *
+from parsers import TeamParser
 
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())

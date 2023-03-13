@@ -1,4 +1,5 @@
 from streamlit.components.v1 import html
+from constants import *
 
 def nav_page(page_name, timeout_secs=3):
     nav_script = """
@@ -33,3 +34,9 @@ def format_time(seconds):
         return f"{hours:02d} hours and {minutes:02d} minutes"
     else:
         return f"{minutes:02d} minutes"
+
+def get_screenshots_path(session_id):
+    return f"{SCREENSHOT_PATH}/{session_id}/screenshots"
+
+def get_player_lists_path(session_id):
+    return f"{PLAYER_LISTS_PATH}/{session_id}"

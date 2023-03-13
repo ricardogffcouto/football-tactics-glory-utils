@@ -125,17 +125,19 @@ class Player:
 @dataclass
 class TeamParser:
     team_id: uuid.uuid4
+    session_id: uuid.uuid4
     config: dict = field(default_factory=dict)
 
     @property
     def path(self):
-        return f"{SCREENSHOT_PATH}/{self.team_id}"
+        return f"{SCREENSHOT_PATH}/{self.session_id}/screenshots/{self.team_id}"
 
     def get_player_image_filenames(self, player_i):
         return [f"{self.path}/{p}" for p in os.listdir(self.path) if p.startswith(f"player_{player_i}_")]
 
     def get_name_and_country(self):
         team_img = cv2.imread(f"{self.path}/team_name.png")
+        cv2.bitwise_not(team_img)
         team_name = pyt.image_to_string(team_img)
         return clean(team_name)
 

@@ -1,0 +1,9 @@
+skills/*
+screenshots/*
+player_lists/*
+datasets/*
+models/*
+.idea/*
+.ipynb_checkpoints/
+**/__pycache__
+Pipfile.lock

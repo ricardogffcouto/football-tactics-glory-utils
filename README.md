@@ -1,0 +1,11 @@
+Todo:
+- Speed up processing
+  - Remove 12th player (it is always invalid)
+  - 
+- Clean up data
+- Compress and save images
+- Multiprocessing
+- To be able to process an entire continent
+- Get player prices
+- Improve the ocr by training pytesseract
+- Create a server that receives the images and returns the csv parsed result

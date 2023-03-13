@@ -10,6 +10,9 @@ SKILL_LEVEL_MODEL_FILE = f"{CURRENT_PATH}/models/skill_level.h5"
 PLAYER_LISTS_PATH = f"{CURRENT_PATH}/player_lists"
 MODELS_PATH = f"{CURRENT_PATH}/models"
 
+SKILLS_MODEL_URL = "https://www.dropbox.com/s/mhiirik85zlpl0u/skills.h5?dl=1"
+SKILL_LEVEL_MODEL_URL = "https://www.dropbox.com/s/yfcy1q2ffkpz147/skill_level.h5?dl=1"
+
 TARGET_SIZE = (224, 224)
 
 # PLAYER COORDINATES

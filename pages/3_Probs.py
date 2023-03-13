@@ -1,3 +1,5 @@
+import streamlit as st
+import utils.streamlit as st_utils
 import random
 
 def probs(a, b, c=1):
@@ -11,7 +13,8 @@ def probs(a, b, c=1):
                 break
     return round(prob / 10000, 1)
 
-while True:
+st_utils('Probability Calculator')
+
     print("Calculate probability")
     a = int(input("Your action:"))
     b = int(input("Def. action:"))

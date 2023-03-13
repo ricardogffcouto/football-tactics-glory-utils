@@ -1,4 +1,4 @@
-from streamlit.components.v1 import html
+import streamlit as st
 from constants import *
 
 def nav_page(page_name, timeout_secs=3):
@@ -24,7 +24,7 @@ def nav_page(page_name, timeout_secs=3):
             });
         </script>
     """ % (page_name, timeout_secs)
-    html(nav_script)
+    st.components.v1.html(nav_script)
 
 
 def format_time(seconds):
@@ -40,3 +40,7 @@ def get_screenshots_path(session_id):
 
 def get_player_lists_path(session_id):
     return f"{PLAYER_LISTS_PATH}/{session_id}"
+
+def header(subtitle):
+    st.write('# Football Tactics and Glory')
+    st.write(f'## {subtitle}')

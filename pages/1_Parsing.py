@@ -2,12 +2,19 @@ import shutil
 import streamlit as st
 import pandas as pd
 import datetime
+from parsers import TeamParser
+import uuid
+from constants import *
+import io
+import zipfile
 import os
 from utils import streamlit as st_utils
-from parsers import TeamParser
-from constants import SCREENSHOT_PATH
+import urllib.request
 
-SESSION_ID = st.session_state["session_id"]
+
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+SESSION_ID = st.session_state.session_id
 PLAYER_LISTS_SESSION_PATH = st_utils.get_player_lists_path(SESSION_ID)
 SCREENSHOTS_SESSION_PATH = st_utils.get_screenshots_path(SESSION_ID)
 
@@ -86,9 +93,33 @@ def parse_teams(batch_size=20, team_amount=1, resume=False):
     )
     shutil.rmtree(f"{SCREENSHOT_PATH}/{SESSION_ID}")
 
+def load_models():
+    with st.spinner("Please wait we are downloading required models..."):
+        urllib.request.urlretrieve(
+            SKILLS_MODEL_URL, f"{MODELS_PATH}/skills.h5"
+        )
+        urllib.request.urlretrieve(
+            SKILL_LEVEL_MODEL_URL, f"{MODELS_PATH}/skill_level.h5"
+        )
 
-st.write('# Football Tactics and Glory')
-st.write('## Scouting')
+st_utils.header("Team Parser")
 st.write(f"Session ID: {SESSION_ID}")
 
-st.button("Start!", on_click=parse_teams)
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+if not (os.path.exists(f"{MODELS_PATH}/skills.h5") and os.path.exists(f"{MODELS_PATH}/skill_level.h5")):
+    load_models()
+
+screenshots_file = st.file_uploader("Upload screenshots.zip", "zip")
+if screenshots_file is not None:
+    with io.BytesIO(screenshots_file.read()) as zip_stream:
+        with zipfile.ZipFile(zip_stream, 'r') as zip_archive:
+            st.write("Extracting files...")
+            st.write("This process may take up to a minute.")
+            zip_archive.extractall(f"{SCREENSHOT_PATH}/{SESSION_ID}")
+            st.write("Files extracted successfully!")
+            team_amount = len(os.listdir(st_utils.get_screenshots_path(SESSION_ID)))
+            expected_time_seconds = st_utils.format_time(team_amount * 30)
+            st.write(f"Expected time: {expected_time_seconds}")
+            st.button("Start!", on_click=parse_teams)

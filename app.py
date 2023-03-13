@@ -6,7 +6,6 @@ import io
 import zipfile
 import os
 from utils import streamlit as st_utils
-from os import path
 import urllib.request
 
 
@@ -16,7 +15,7 @@ st.write('## Scouting')
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
-if path.exists(f"{MODELS_PATH}/skills.h5") and path.exists(f"{MODELS_PATH}/skill_level.h5"):
+if os.path.exists(f"{MODELS_PATH}/skills.h5") and os.path.exists(f"{MODELS_PATH}/skill_level.h5"):
     st.success("Models ready to use!")
     pass
 else:

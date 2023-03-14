@@ -50,7 +50,7 @@ def get_last_team_id():
     player_list = pd.read_csv(f"{PLAYER_LISTS_SESSION_PATH}/{last_player_list_filename}")
     return player_list.tail(1)['team_id'].iloc[0]
 
-def parse_teams(batch_size=20, team_amount=1, resume=False):
+def parse_teams(batch_size=500, team_amount=None, resume=False):
     team_ids = os.listdir(SCREENSHOTS_SESSION_PATH)
     players = []
     player_lists = []

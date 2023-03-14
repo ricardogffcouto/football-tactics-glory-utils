@@ -94,6 +94,8 @@ def parse_teams(batch_size=20, team_amount=1, resume=False):
     shutil.rmtree(f"{SCREENSHOT_PATH}/{SESSION_ID}")
 
 def load_models():
+    if not os.path.exists(MODELS_PATH):
+        os.makedirs(MODELS_PATH)
     with st.spinner("Please wait we are downloading required models..."):
         urllib.request.urlretrieve(
             SKILLS_MODEL_URL, f"{MODELS_PATH}/skills.h5"

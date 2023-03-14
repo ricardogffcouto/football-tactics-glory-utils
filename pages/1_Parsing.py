@@ -11,7 +11,6 @@ import urllib.request
 
 from utils import streamlit as st_utils
 from constants import *
-from parsers import TeamParser
 
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
@@ -111,6 +110,9 @@ if "session_id" not in st.session_state:
 
 if not (os.path.exists(f"{MODELS_PATH}/skills.h5") and os.path.exists(f"{MODELS_PATH}/skill_level.h5")):
     load_models()
+
+
+from parsers import TeamParser
 
 screenshots_file = st.file_uploader("Upload screenshots.zip", "zip")
 if screenshots_file is not None:

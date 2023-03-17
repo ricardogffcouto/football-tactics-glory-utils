@@ -51,6 +51,7 @@ class Team:
 class Player:
     team_name: str
     team_id: uuid.uuid4
+    player_i: int
     id: uuid.uuid4 = field(default_factory=uuid.uuid4)
     league_i: int = None
     pos: str = None
@@ -122,6 +123,7 @@ class Player:
                 self.ctr = None
 
 
+
 @dataclass
 class TeamParser:
     team_id: uuid.uuid4
@@ -154,6 +156,7 @@ class TeamParser:
                 image_filenames=self.get_player_image_filenames(player_i),
                 team_name=team_name,
                 team_id=self.team_id,
+                player_i=player_i,
             )
 
             print(f"Parsing player {player_i + 1}")
@@ -186,6 +189,7 @@ class PlayerParser:
     image_filenames: list
     team_name: str
     team_id: uuid.uuid4
+    player_i: int
     config: dict = field(default_factory=dict)
 
     def get_filename_by_key(self, key):
@@ -303,7 +307,7 @@ class PlayerParser:
         return clean_and_set(player, key, text)
 
     def parse(self):
-        player = Player(team_name=self.team_name, team_id=self.team_id)
+        player = Player(team_name=self.team_name, team_id=self.team_id, player_i=self.player_i)
         ignore_keys = ["lvl", "info", "end", "pos_img"]
 
         for key in PLAYER_COORDINATES:

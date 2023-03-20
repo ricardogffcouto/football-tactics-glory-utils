@@ -139,6 +139,13 @@ SKILLS = [
     "None",
 ]
 
+ATTRIBUTES = [
+    "acc",
+    "pas",
+    "df",
+    "ctr",
+]
+
 TABLE_X = 600
 TABLE_INITIAL_Y = 250
 TABLE_18_Y = 948

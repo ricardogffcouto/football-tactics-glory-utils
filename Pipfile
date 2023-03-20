@@ -12,6 +12,7 @@ tensorflow = "*"
 sklearn = "*"
 scipy = "*"
 streamlit = "*"
+easyocr = "*"
 
 [dev-packages]
 

@@ -51,7 +51,7 @@ def get_last_team_id():
     return player_list.tail(1)['team_id'].iloc[0]
 
 def parse_teams(batch_size=500, team_amount=None, resume=False):
-    team_ids = os.listdir(SCREENSHOTS_SESSION_PATH)
+    team_ids = sorted(os.listdir(SCREENSHOTS_SESSION_PATH))
     players = []
     player_lists = []
 
@@ -60,7 +60,7 @@ def parse_teams(batch_size=500, team_amount=None, resume=False):
         last_team_id = get_last_team_id()
         teams_to_parse = team_ids[team_ids.index(last_team_id):]
 
-    expected_time_seconds = st_utils.format_time(len(teams_to_parse) * 30)
+    expected_time_seconds = st_utils.format_time(len(teams_to_parse) * 10)
     progress_bar = st.progress(0, text=f"Parsed teams: 0 / {len(teams_to_parse)}. Expected time: {expected_time_seconds}")
 
     for i, team_id in enumerate(teams_to_parse):
@@ -70,7 +70,7 @@ def parse_teams(batch_size=500, team_amount=None, resume=False):
         )
         players += team.parse_players()
         percentage_done = int((i+1)*100/len(teams_to_parse))
-        expected_time_seconds = st_utils.format_time((len(teams_to_parse) - (i + 1)) * 30)
+        expected_time_seconds = st_utils.format_time((len(teams_to_parse) - (i + 1)) * 10)
 
         if (team_amount and i + 1 >= team_amount):
             player_lists.append(save_players(players))
@@ -113,10 +113,10 @@ if "session_id" not in st.session_state:
 if not (os.path.exists(f"{MODELS_PATH}/skills.h5") and os.path.exists(f"{MODELS_PATH}/skill_level.h5")):
     load_models()
 
-
 from parsers import TeamParser
 
 screenshots_file = st.file_uploader("Upload screenshots.zip", "zip")
+
 if screenshots_file is not None:
     with io.BytesIO(screenshots_file.read()) as zip_stream:
         with zipfile.ZipFile(zip_stream, 'r') as zip_archive:
@@ -125,6 +125,7 @@ if screenshots_file is not None:
             zip_archive.extractall(f"{SCREENSHOT_PATH}/{SESSION_ID}")
             st.write("Files extracted successfully!")
             team_amount = len(os.listdir(st_utils.get_screenshots_path(SESSION_ID)))
-            expected_time_seconds = st_utils.format_time(team_amount * 30)
+            expected_time_seconds = st_utils.format_time(team_amount * 10)
             st.write(f"Expected time: {expected_time_seconds}")
-            st.button("Start!", on_click=parse_teams)
+
+st.button("Start!", on_click=parse_teams)

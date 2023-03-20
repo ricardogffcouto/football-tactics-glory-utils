@@ -3,7 +3,7 @@ import uuid
 import cv2
 import re
 
-import pytesseract as pyt
+import easyocr
 from keras.utils import load_img, img_to_array
 
 from constants import *
@@ -15,6 +15,7 @@ import numpy as np
 
 skills_model = load_model(SKILLS_MODEL_FILE)
 skill_level_model = load_model(SKILL_LEVEL_MODEL_FILE)
+reader = easyocr.Reader(['en'])
 
 def clean(text):
     if isinstance(text, str):
@@ -138,10 +139,11 @@ class TeamParser:
         return [f"{self.path}/{p}" for p in os.listdir(self.path) if p.startswith(f"player_{player_i}_")]
 
     def get_name_and_country(self):
-        team_img = cv2.imread(f"{self.path}/team_name.png")
-        cv2.bitwise_not(team_img)
-        team_name = pyt.image_to_string(team_img)
-        return clean(team_name)
+        team_name = reader.readtext(f"{self.path}/team_name.png")
+        if len(team_name):
+            team_name = team_name[0][1]
+            return clean(team_name)
+        return None
 
     def parse_players(self):
         players = []
@@ -199,14 +201,13 @@ class PlayerParser:
         filename = self.get_filename_by_key(key)
         return cv2.imread(filename, flag)
 
-    def get_text_from_image(self, img, extra_config = ""):
-        config = '--oem 1 --psm 6'
-        if extra_config:
-            config += " " + extra_config
-        text = pyt.image_to_string(img, config=config)
-        if text:
-            return text
-
+    def get_text_from_image(self, img, config={}):
+        if config.get("allowlist"):
+            text = reader.readtext(img, allowlist=config.get("allowlist"))
+        else:
+            text = reader.readtext(img)
+        if len(text):
+            return text[0][1]
         return None
     def get_name(self, name_img):
         return self.get_text_from_image(name_img)
@@ -218,7 +219,7 @@ class PlayerParser:
         return None
 
     def get_attribute(self, attr_img):
-        return self.get_text_from_image(attr_img, "digits")
+        return self.get_text_from_image(attr_img, config={"allowlist": "0123456789"})
 
     def get_skill(self, skill_filename):
         img = load_img(skill_filename, target_size=TARGET_SIZE)

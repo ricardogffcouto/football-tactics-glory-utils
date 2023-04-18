@@ -119,7 +119,7 @@ TEAM_NAME = {
 }
 
 POSITIONS = [
-    "?", "GK", "SW", "LD", "CD", "RD", "DM", "LM", "CM", "RM", "AM", "LW", "CF", "RW", "G", "D", "M", "A", "DF", "MF", "FW"
+    "?", "GK", "SW", "LD", "CD", "RD", "DM", "LM", "CM", "RM", "AM", "LF", "CF", "RF", "G", "D", "M", "A", "DF", "MF", "FW"
 ]
 
 SKILLS = [

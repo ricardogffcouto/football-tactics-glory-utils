@@ -20,6 +20,19 @@ mapping = {
     'Skill': 'skill',
 }
 
+st.markdown(
+    """
+    <style>
+        .stSelectbox > label,
+        .stNumberInput > label,
+        .stMultiSelect > label {
+            display: none !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 def skill_filter(key):
     defaults = st.session_state.filter_list[key].get('values', [1, 100])
     col1, col2, col3 = st.columns(3)
@@ -68,25 +81,27 @@ def add_filter():
         "values": [],
     }
 
-def show_search_json():
+def search_json():
     search_json = {}
     for key, value in st.session_state.filter_list.items():
         search_json[mapping[value['filter']]] = value['values']
-    return st.json(search_json)
+    return search_json
 
 if not st.session_state.get("filter_list", None):
     st.session_state.filter_list = {}
 
-# show_search_json()
-# for key in st.session_state.filter_list.keys():
-#     new_filter(key)
-# st.button("Add Filter", on_click=add_filter)
+if st.session_state.get("dataframe", None) is not None:
+    st.session_state.dataframe = search.load_data("5c1560a2-ce92-45a9-b3e0-277d051a27c0")
 
-tabs = st.tabs(["1", "2", "3", "4", "5", "6"])
-for tab in tabs:
-    with tab:
-        search_json = st.text_area("Search JSON", key=uuid.uuid4())
-        search_btn = st.button("Search", key=uuid.uuid4())
-        if search_btn:
-            df = search.Filter().apply(df, search_json)
-            st.dataframe(df, key=uuid.uuid4())
+for key in st.session_state.filter_list.keys():
+    new_filter(key)
+
+col1, col2, col3, col4 = st.columns(4)
+col1.button("Add Filter", on_click=add_filter)
+col2.button("Import Filters")
+col3.button("Export Filters")
+col4.button("Clear Filters")
+
+filtered_df = search.Filter().apply(st.session_state.dataframe, search_json())
+view_df = search.view_dataframe(filtered_df).sort_values(by="max_attr_skew", ascending=False)
+st.dataframe(view_df)

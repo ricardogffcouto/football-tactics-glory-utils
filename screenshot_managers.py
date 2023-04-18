@@ -1,4 +1,4 @@
-import os
+import logging
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -10,6 +10,7 @@ import cv2
 from constants import *
 import utils.transforms as tf
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class PlayerScreenshotManager:
@@ -17,6 +18,10 @@ class PlayerScreenshotManager:
     player_img: np.ndarray
     player_i: int
     config: dict = field(default_factory=dict)
+
+    @property
+    def folder_path(self):
+        return f"screenshots/{self.config.get('session_id', None)}/screenshots/team_{self.team_id}/"
 
     def get_name(self, name_img):
         return tf.image_preprocess(name_img, is_label_light=False)
@@ -41,9 +46,9 @@ class PlayerScreenshotManager:
         raise NotImplementedError
 
     def save_img(self, key, img):
-        if key in ["lvl", "info", "skill_1_level", "skill_2_level"]:
+        if key in ["info", "skill_1_level", "skill_2_level"]:
             return
-        if key in ["acc", "pas", "df", "ctr", "age"]:
+        if key in ["acc", "pas", "df", "ctr", "age", "lvl"]:
             image = self.get_attribute(img)
         elif key == "skill_1":
             image = self.get_skill(img)
@@ -52,8 +57,7 @@ class PlayerScreenshotManager:
         else:
             image = getattr(self, f"get_{key}")(img)
 
-        folder_path = f"screenshots/team_{self.team_id}/"
-        filename = f"{folder_path}/player_{self.player_i}_{key}.png"
+        filename = f"{self.folder_path}/player_{self.player_i}_{key}.png"
         
         cv2.imwrite(filename, image)
 
@@ -86,6 +90,10 @@ class TeamScreenshotManager:
     team_imgs: list[str] = field(default_factory=list)
     config: dict = field(default_factory=dict)
 
+    @property
+    def folder_path(self):
+        return f"screenshots/{self.config.get('session_id', None)}/screenshots/team_{self.team_id}/"
+
     def show_reserve_players(self):
         pg.moveTo(SCROLL_X, SCROLL_Y1)
         pg.mouseDown(button="left")
@@ -97,10 +105,9 @@ class TeamScreenshotManager:
         team_name_img = tf.get_img_from_screenshot(team_name_img)
         team_name_img = tf.image_preprocess(team_name_img, is_label_light=False)
 
-        folder_path = f"screenshots/team_{self.team_id}/"
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-        cv2.imwrite(f"{folder_path}/team_name.png", team_name_img)
+        if not os.path.exists(self.folder_path):
+            os.makedirs(self.folder_path)
+        cv2.imwrite(f"{self.folder_path}/team_name.png", team_name_img)
 
     def save_screenshot_player_table(self):
         team_img = pg.screenshot(region=tf.to_region(PLAYERS_TABLE))
@@ -152,7 +159,7 @@ class TeamScreenshotManager:
         return player_imgs
 
     def save(self):
-        print(f"Saving team {self.team_id}")
+        logger.info(f"Saving team {self.team_id}")
         time.sleep(0.1)
         self.save_screenshot_team_name()
         self.save_screenshot_player_table()
@@ -161,6 +168,7 @@ class TeamScreenshotManager:
         player_imgs = self.get_player_imgs()
         for player_i, player_img in enumerate(player_imgs):
             player_manager = PlayerScreenshotManager(
+                config=self.config,
                 team_id=self.team_id,
                 player_i=player_i,
                 player_img=player_img
@@ -173,9 +181,11 @@ class LeagueScreenshotManager:
     config: dict = field(default_factory=dict)
 
     def save(self):
-        print(f"Saving league...")
+        logger.info(f"Saving league...")
         for team_i in range(self.team_amount):
-            team = TeamScreenshotManager()
+            team = TeamScreenshotManager(
+                config=self.config
+            )
 
             y = TABLE_INITIAL_Y + TABLE_H * team_i
             if team_i == ELEMENTS_PER_TABLE:
@@ -191,7 +201,7 @@ class CountryScreenshotManager:
     config: dict = field(default_factory=dict)
 
     def save(self):
-        print("Saving country...")
+        logger.info("Saving country...")
         parse_five_divisions = self.config.get("has_five_divisions") and not self.config.get("first_division_only")
         division_teams = DIVISION_TEAMS_FULL if parse_five_divisions else DIVISION_TEAMS_PREMIER
 
@@ -216,7 +226,7 @@ class ContinentScreenshotManager:
         pg.mouseUp(button="left")
 
     def save(self):
-        print(f"Saving continent...")
+        logger.info(f"Saving continent...")
         for country_i in range(self.country_amount):
             if self.config.get("skip_countries"):
                 if country_i + 1 in self.config.get("skip_countries"):
@@ -225,8 +235,9 @@ class ContinentScreenshotManager:
             if country_i == ELEMENTS_PER_TABLE:
                 self.show_bottom_countries()
 
-            y = TABLE_INITIAL_Y + TABLE_H * country_i
-            if country_i >= ELEMENTS_PER_TABLE:
+            if country_i < ELEMENTS_PER_TABLE:
+                y = TABLE_INITIAL_Y + TABLE_H * country_i
+            else:
                 y = TABLE_18_Y - (TABLE_H / 2) - TABLE_H * (country_i - ELEMENTS_PER_TABLE)
 
             country = CountryScreenshotManager(config=self.config)
@@ -237,3 +248,22 @@ class ContinentScreenshotManager:
             country.save()
 
             pg.click(button="right")
+
+@dataclass
+class FullScreenshotManager:
+    screenshots_id: str
+    country_amount: int
+    current_country_rank: int
+
+    def save(self):
+        your_country_manager = CountryScreenshotManager(config={"has_five_divisions": True, "session_id": self.screenshots_id})
+        your_country_manager.save()
+        pg.moveTo(740, 80)
+        pg.click()
+        continent = ContinentScreenshotManager(
+            country_amount=self.country_amount,
+            config={"skip_countries": [self.current_country_rank], "session_id": self.screenshots_id},
+        )
+        continent.save()
+
+

@@ -1,4 +1,3 @@
-import shutil
 import streamlit as st
 import pandas as pd
 import datetime
@@ -6,15 +5,14 @@ import uuid
 
 import io
 import zipfile
-import os
 import urllib.request
 
 from utils import streamlit as st_utils
 from constants import *
 
-if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
-SESSION_ID = st.session_state.session_id
+
+st.session_state.session_id = st.text_input("Session ID")
+SESSION_ID = st.session_state.get("session_id", None)
 PLAYER_LISTS_SESSION_PATH = st_utils.get_player_lists_path(SESSION_ID)
 SCREENSHOTS_SESSION_PATH = st_utils.get_screenshots_path(SESSION_ID)
 
@@ -51,6 +49,8 @@ def get_last_team_id():
     return player_list.tail(1)['team_id'].iloc[0]
 
 def parse_teams(batch_size=500, team_amount=None, resume=False):
+    from parsers import TeamParser
+
     team_ids = sorted(os.listdir(SCREENSHOTS_SESSION_PATH))
     players = []
     player_lists = []
@@ -66,11 +66,16 @@ def parse_teams(batch_size=500, team_amount=None, resume=False):
     for i, team_id in enumerate(teams_to_parse):
         team = TeamParser(
             team_id=team_id,
-            session_id=SESSION_ID
+            session_id=SESSION_ID,
+            config={
+                "filter_players": {
+                    "pos": ["M", "MF", "F", "FW"],
+                    "lvl": [50, 100],
+                }
+            }
         )
         players += team.parse_players()
         percentage_done = int((i+1)*100/len(teams_to_parse))
-        expected_time_seconds = st_utils.format_time((len(teams_to_parse) - (i + 1)) * 10)
 
         if (team_amount and i + 1 >= team_amount):
             player_lists.append(save_players(players))
@@ -81,7 +86,7 @@ def parse_teams(batch_size=500, team_amount=None, resume=False):
             players = []
 
         progress_bar.progress(percentage_done,
-                                  text=f"Parsed teams: {i + 1} / {len(teams_to_parse)}. Expected time: {expected_time_seconds}")
+                                  text=f"Parsed teams: {i + 1} / {len(teams_to_parse)}.")
 
     player_list = merge_player_lists(player_lists)
     st.write("Done!")
@@ -91,7 +96,6 @@ def parse_teams(batch_size=500, team_amount=None, resume=False):
         file_name=f'player_list_{SESSION_ID}.csv',
         mime='text/csv',
     )
-    shutil.rmtree(f"{SCREENSHOT_PATH}/{SESSION_ID}")
 
 def load_models():
     if not os.path.exists(MODELS_PATH):
@@ -113,8 +117,6 @@ if "session_id" not in st.session_state:
 if not (os.path.exists(f"{MODELS_PATH}/skills.h5") and os.path.exists(f"{MODELS_PATH}/skill_level.h5")):
     load_models()
 
-from parsers import TeamParser
-
 screenshots_file = st.file_uploader("Upload screenshots.zip", "zip")
 
 if screenshots_file is not None:
@@ -128,4 +130,9 @@ if screenshots_file is not None:
             expected_time_seconds = st_utils.format_time(team_amount * 10)
             st.write(f"Expected time: {expected_time_seconds}")
 
-st.button("Start!", on_click=parse_teams)
+if not SESSION_ID:
+    st.write("Invalid session_id. Please write a uuid4 string.")
+elif not os.path.exists(st_utils.get_screenshots_path(SESSION_ID)):
+    st.write("Please upload screenshots.zip file or use Player Loading to load players into this session_id.")
+else:
+    st.button("Start!", on_click=parse_teams)

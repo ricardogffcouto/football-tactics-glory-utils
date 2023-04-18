@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 import cv2
@@ -16,6 +17,8 @@ import numpy as np
 skills_model = load_model(SKILLS_MODEL_FILE)
 skill_level_model = load_model(SKILL_LEVEL_MODEL_FILE)
 reader = easyocr.Reader(['en'])
+
+logger = logging.getLogger(__name__)
 
 def clean(text):
     if isinstance(text, str):
@@ -50,10 +53,10 @@ class Team:
 
 @dataclass
 class Player:
-    team_name: str
     team_id: uuid.uuid4
     player_i: int
     id: uuid.uuid4 = field(default_factory=uuid.uuid4)
+    team_name: str = None
     league_i: int = None
     pos: str = None
     name: str = None
@@ -70,29 +73,17 @@ class Player:
     skill_2: str = None
     skill_1_level: int = None
     skill_2_level: int = None
-    data_reliability: float = 0.0
+    is_invalid: bool = False
+    is_filtered: bool = False
 
     def is_equal_to(self, other):
-        attr_list = ["name", "gift", "pos", "acc", "pas", "df", "ctr", "lvl", "age", "sk_pot"]
+        if self.is_filtered and other.is_filtered or self.is_invalid and other.is_invalid:
+            return False
+        attr_list = ["gift", "pos", "acc", "pas", "df", "ctr", "lvl", "age"]
         return sum(getattr(self, attr) == getattr(other, attr) for attr in attr_list) / len(attr_list) >= 0.8
-
-    def set_data_reliability(self):
-        attr_list = ["pos", "acc", "pas", "df", "ctr", "lvl", "age"]
-        self.data_reliability = sum(getattr(self, attr) is not None for attr in attr_list) / len(attr_list)
 
     def set_skill_potential(self):
         self.sk_pot = 5 + self.gift if self.gift else None
-
-    @property
-    def is_invalid(self):
-        return self.data_reliability < 0.5
-
-    def validate(self):
-        self.validate_age()
-        self.validate_lvl()
-        self.validate_attributes()
-        self.set_skill_potential()
-        self.set_data_reliability()
 
     def validate_age(self):
         if self.age and not (self.age >= 16 and self.age <= 40):
@@ -145,6 +136,7 @@ class TeamParser:
             return clean(team_name)
         return None
 
+
     def parse_players(self):
         players = []
         invalid_players = 0
@@ -159,26 +151,27 @@ class TeamParser:
                 team_name=team_name,
                 team_id=self.team_id,
                 player_i=player_i,
+                config=self.config
             )
 
-            print(f"Parsing player {player_i + 1}")
+            logger.info(f"Parsing player {player_i + 1}")
 
             player = None
 
             try:
                 player = player_parser.parse()
             except Exception as e:
-                print(f"Error parsing player {player_i + 1} from {team_name}: {e}")
+                logger.warning(f"Error parsing player {player_i + 1} from {self.team_id}: {e}")
 
             if not player or player.is_invalid:
-                print("Player is invalid")
+                logger.warning("Player is invalid")
                 invalid_players += 1
                 if invalid_players >= 3:
                     break
                 continue
 
             if player_i >= PLAYERS_PER_LIST and len(list(filter(lambda pl: player.is_equal_to(pl), players))) > 0:
-                print("Duplicate player found! Team complete.")
+                logger.warning("Duplicate player found! Team complete.")
                 break
 
             players.append(player)
@@ -189,9 +182,9 @@ class TeamParser:
 @dataclass
 class PlayerParser:
     image_filenames: list
-    team_name: str
     team_id: uuid.uuid4
     player_i: int
+    team_name: str = None
     config: dict = field(default_factory=dict)
 
     def get_filename_by_key(self, key):
@@ -286,7 +279,7 @@ class PlayerParser:
         raise NotImplementedError
 
     def set_value(self, player, key, img):
-        if key in ["acc", "pas", "df", "ctr", "age"]:
+        if key in ["acc", "pas", "df", "ctr", "age", "lvl"]:
             text = self.get_attribute(img)
         elif key == "skill_1":
             text = self.get_skill(img)
@@ -307,27 +300,55 @@ class PlayerParser:
 
         return clean_and_set(player, key, text)
 
+    def set_key_value(self, player, key):
+        ignore_keys = ["info", "end", "pos_img"]
+
+        if key in ignore_keys:
+            return
+
+        if key in ["skill_1", "skill_2"]:
+            current_img = self.get_filename_by_key(key)
+        else:
+            current_img = self.get_image_by_key(key)
+
+        if key in SPLIT_PLAYER_KEYS:
+            for k in SPLIT_PLAYER_KEYS[key]:
+                if k in ignore_keys:
+                    return
+                self.set_value(player, k, current_img)
+        else:
+            self.set_value(player, key, current_img)
+
+    def is_player_key_valid(self, player, key):
+        key_filter = self.config.get("filter_players", {}).get(key)
+        if key_filter:
+            if key == "pos":
+                return getattr(player, key) in key_filter
+            if key == "skills":
+                return player.skill_1 in key_filter or player.skill_2 in key_filter
+            if isinstance(key_filter, list):
+                return key_filter[0] <= getattr(player, key) <= key_filter[1]
+        return True
+
     def parse(self):
         player = Player(team_name=self.team_name, team_id=self.team_id, player_i=self.player_i)
-        ignore_keys = ["lvl", "info", "end", "pos_img"]
 
-        for key in PLAYER_COORDINATES:
-            if key in ignore_keys:
-                continue
-
-            if key in ["skill_1", "skill_2"]:
-                current_img = self.get_filename_by_key(key)
+        for key in self.config.get("filter_players", {}):
+            if key == "skills":
+                self.set_key_value(player, "skill_1")
+                self.set_key_value(player, "skill_2")
             else:
-                current_img = self.get_image_by_key(key)
+                self.set_key_value(player, key)
+            if not self.is_player_key_valid(player, key):
+                player.is_filtered = True
+                logger.info(f"Stopped parsing player {self.player_i + 1}. Filtered.")
+                return player
 
-            if key in SPLIT_PLAYER_KEYS:
-                for k in SPLIT_PLAYER_KEYS[key]:
-                    if k in ignore_keys:
-                        continue
-                    self.set_value(player, k, current_img)
-            else:
-                self.set_value(player, key, current_img)
+        player_coordinates = [coordinate for coordinate in PLAYER_COORDINATES if coordinate not in self.config.get("filter_players", {})]
+        if self.config.get("filter_players", {}).get("skills"):
+            player_coordinates = [coordinate for coordinate in player_coordinates if coordinate not in ["skill_1", "skill_2"]]
 
-        player.validate()
+        for key in player_coordinates:
+            self.set_key_value(player, key)
 
         return player

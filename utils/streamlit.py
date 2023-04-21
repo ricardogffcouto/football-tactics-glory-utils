@@ -1,3 +1,6 @@
+import uuid
+from dataclasses import dataclass
+
 import streamlit as st
 from constants import *
 
@@ -44,3 +47,107 @@ def get_player_lists_path(session_id):
 def header(subtitle):
     st.write('# Football Tactics and Glory')
     st.write(f'## {subtitle}')
+
+
+@dataclass
+class PlayerFilter:
+    container_id: uuid.UUID = uuid.uuid4()
+
+    MAPPING = {
+        'Position': 'pos',
+        'Age': 'age',
+        'Giftedness': 'gift',
+        'Accuracy': 'acc',
+        'Passing': 'pas',
+        'Defence': 'df',
+        'Control': 'ctr',
+        'Skill': 'skill',
+        'Level': 'lvl',
+    }
+
+    if not st.session_state.get(container_id, None):
+        st.session_state[container_id] = {}
+
+    def _skill_filter(self, key):
+        defaults = self.filter_container[key].get('values', [1, 100])
+        col1, col2, col3 = st.columns(3)
+        col1.selectbox("", SKILLS, default=defaults[0], on_change=self._update_filter, key=f"{key}_name", args=(key,))
+        col2.number_input("Min", value=defaults[1], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=f"{key}_min", args=(key,))
+        col3.number_input("Min", value=defaults[2], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=f"{key}_max", args=(key,))
+
+    def _is_in_filter(self, key, options):
+        default = self.filter_container[key].get('values', options[0])
+        st.multiselect("", options, default=default, on_change=self._update_filter, key=f"{key}_values", args=(key,))
+
+    def _min_max_filter(self, key):
+        defaults = self.filter_container[key].get('values', [1, 100])
+        col1, col2 = st.columns(2)
+        col1.number_input("Min", value=defaults[0], min_value=1, step=1, on_change=self._update_filter, key=f"{key}_min", args=(key,))
+        col2.number_input("Min", value=defaults[1], min_value=1, step=1, on_change=self._update_filter, key=f"{key}_max", args=(key,))
+
+    def _new_filter(self, key):
+        defaults = self.filter_container[key]
+        col1, col2, col3 = st.columns([2, 5, 1])
+        selected_filter_index = list(self.MAPPING.keys()).index(defaults['filter'])
+        filter_name = col1.selectbox("", list(self.MAPPING.keys()), on_change=self._update_filter, key=f"{key}_filter_name", args=(key,), index=selected_filter_index)
+        with col2:
+            if filter_name == "Position":
+                self._is_in_filter(key, POSITIONS)
+            elif filter_name == "Skill":
+                self._skill_filter(key)
+            else:
+                self._min_max_filter(key)
+        with col3:
+            st.button("X", on_click=self._delete_filter, args=(key,), key=f"{key}_delete")
+
+    def _update_filter(self, key):
+        self.filter_container[key] = {
+            "filter": st.session_state[f"{key}_filter_name"],
+            "values": st.session_state.get(f"{key}_values", []) or [
+                st.session_state.get(f"{key}_min", 1),
+                st.session_state.get(f"{key}_max", 1),
+            ]
+        }
+
+    def _delete_filter(self, key):
+        self.filter_container.pop(key)
+
+    def _add_filter(self):
+        self.filter_container[uuid.uuid4()] = {
+            "filter": "Position",
+            "values": [],
+        }
+
+    @property
+    def filter_container(self):
+        return st.session_state[self.container_id]
+
+    @property
+    def search_json(self):
+        search_json = {}
+        for key, value in self.filter_container.items():
+            search_json[self.MAPPING[value['filter']]] = value['values']
+        return search_json
+
+    def draw(self):
+        st.markdown(
+            """
+            <style>
+                .stSelectbox > label,
+                .stNumberInput > label,
+                .stMultiSelect > label {
+                    display: none !important;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        for key in self.filter_container.keys():
+            self._new_filter(key)
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.button("Add Filter", on_click=self._add_filter)
+        col2.button("Import Filters")
+        col3.button("Export Filters")
+        col4.button("Clear Filters")

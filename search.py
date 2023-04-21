@@ -34,14 +34,15 @@ class Filter:
         return df[(df[attr] >= attr_min) & (df[attr] <= attr_max)]
 
     def apply(self, df, search_json):
-        for key in search_json:
-            if key == 'pos':
-                df = self.is_in(df, "pos", search_json['pos'])
-            elif key == 'skills':
-                for skill in search_json['skills']:
-                    df = self.skill(df, skill['name'], skill['min'], skill['max'])
-            else:
-                df = self.min_max(df, key, search_json[key][0], search_json[key][1])
+        if df is not None:
+            for key in search_json:
+                if key == 'pos':
+                    df = self.is_in(df, "pos", search_json['pos'])
+                elif key == 'skills':
+                    for skill in search_json['skills']:
+                        df = self.skill(df, skill['name'], skill['min'], skill['max'])
+                else:
+                    df = self.min_max(df, key, search_json[key][0], search_json[key][1])
         return df
 
 def load_data(data_id):
@@ -68,14 +69,16 @@ def load_data(data_id):
     return df
 
 def view_dataframe(df):
-    int_columns = ATTRIBUTES + ["gift", "age", "skill_1_level", "skill_2_level"]
-    df[int_columns] = df[int_columns].fillna(0).astype(int)
+    if df is not None:
+        int_columns = ATTRIBUTES + ["gift", "age", "skill_1_level", "skill_2_level"]
+        df[int_columns] = df[int_columns].fillna(0).astype(int)
 
-    SKILL_COLUMNS = ["skill_1", "skill_1_level", "skill_2", "skill_2_level"]
+        SKILL_COLUMNS = ["skill_1", "skill_1_level", "skill_2", "skill_2_level"]
 
-    view_columns = ["id", "pos", "age", "gift"] + ATTRIBUTES + SKILL_COLUMNS + ["max_attr_skew"]
+        view_columns = ["id", "pos", "age", "gift"] + ATTRIBUTES + SKILL_COLUMNS + ["max_attr_skew"]
 
-    return df[view_columns]
+        return df[view_columns]
+
 
 long_pass_json = {
     "skills": [{
@@ -247,7 +250,7 @@ shortlist = [
 
 shortlist_df = df[df["id"].isin(shortlist)]
 
-run_ocr = True
+run_ocr = False
 if run_ocr:
     reader = easyocr.Reader(['en'])
 

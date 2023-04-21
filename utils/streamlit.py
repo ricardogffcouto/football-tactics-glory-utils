@@ -69,27 +69,27 @@ class PlayerFilter:
         st.session_state[container_id] = {}
 
     def _skill_filter(self, key):
-        defaults = self.filter_container[key].get('values', [1, 100])
+        defaults = self.filter_container[key].get('values', [1, 3])
         col1, col2, col3 = st.columns(3)
-        col1.selectbox("", SKILLS, default=defaults[0], on_change=self._update_filter, key=f"{key}_name", args=(key,))
-        col2.number_input("Min", value=defaults[1], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=f"{key}_min", args=(key,))
-        col3.number_input("Min", value=defaults[2], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=f"{key}_max", args=(key,))
+        col1.selectbox("", SKILLS, on_change=self._update_filter, key=self._key_id(key, "name"), args=(key,))
+        col2.number_input("Min", value=defaults[0], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=self._key_id(key, "min"), args=(key,))
+        col3.number_input("Max", value=defaults[1], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=self._key_id(key, "max"), args=(key,))
 
     def _is_in_filter(self, key, options):
         default = self.filter_container[key].get('values', options[0])
-        st.multiselect("", options, default=default, on_change=self._update_filter, key=f"{key}_values", args=(key,))
+        st.multiselect("", options, default=default, on_change=self._update_filter, key=self._key_id(key, "values"), args=(key,))
 
     def _min_max_filter(self, key):
         defaults = self.filter_container[key].get('values', [1, 100])
         col1, col2 = st.columns(2)
-        col1.number_input("Min", value=defaults[0], min_value=1, step=1, on_change=self._update_filter, key=f"{key}_min", args=(key,))
-        col2.number_input("Min", value=defaults[1], min_value=1, step=1, on_change=self._update_filter, key=f"{key}_max", args=(key,))
+        col1.number_input("Min", value=defaults[0], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "min"), args=(key,))
+        col2.number_input("Max", value=defaults[1], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "max"), args=(key,))
 
     def _new_filter(self, key):
         defaults = self.filter_container[key]
         col1, col2, col3 = st.columns([2, 5, 1])
         selected_filter_index = list(self.MAPPING.keys()).index(defaults['filter'])
-        filter_name = col1.selectbox("", list(self.MAPPING.keys()), on_change=self._update_filter, key=f"{key}_filter_name", args=(key,), index=selected_filter_index)
+        filter_name = col1.selectbox("", list(self.MAPPING.keys()), on_change=self._update_filter, key=self._key_id(key, "filter_name"), args=(key,), index=selected_filter_index)
         with col2:
             if filter_name == "Position":
                 self._is_in_filter(key, POSITIONS)
@@ -98,14 +98,14 @@ class PlayerFilter:
             else:
                 self._min_max_filter(key)
         with col3:
-            st.button("X", on_click=self._delete_filter, args=(key,), key=f"{key}_delete")
+            st.button("X", on_click=self._delete_filter, args=(key,), key=self._key_id(key, "delete"))
 
     def _update_filter(self, key):
         self.filter_container[key] = {
-            "filter": st.session_state[f"{key}_filter_name"],
-            "values": st.session_state.get(f"{key}_values", []) or [
-                st.session_state.get(f"{key}_min", 1),
-                st.session_state.get(f"{key}_max", 1),
+            "filter": st.session_state[self._key_id(key, "filter_name")],
+            "values": st.session_state.get(self._key_id(key, "values"), []) or [
+                st.session_state.get(self._key_id(key, "min"), 1),
+                st.session_state.get(self._key_id(key, "max"), 1),
             ]
         }
 
@@ -117,6 +117,9 @@ class PlayerFilter:
             "filter": "Position",
             "values": [],
         }
+
+    def _key_id(self, key, value):
+        return f"{self.container_id}_{key}_{value}"
 
     @property
     def filter_container(self):

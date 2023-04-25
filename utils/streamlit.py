@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-
+import json
 import streamlit as st
 from constants import *
 
@@ -49,10 +49,7 @@ def header(subtitle):
     st.write(f'## {subtitle}')
 
 
-@dataclass
 class PlayerFilter:
-    container_id: uuid.UUID = uuid.uuid4()
-
     MAPPING = {
         'Position': 'pos',
         'Age': 'age',
@@ -64,9 +61,11 @@ class PlayerFilter:
         'Skill': 'skill',
         'Level': 'lvl',
     }
+    def __init__(self):
+        self.container_id: uuid.UUID = uuid.uuid4()
 
-    if not st.session_state.get(container_id, None):
-        st.session_state[container_id] = {}
+        if not st.session_state.get(str(self.container_id), None):
+            st.session_state[str(self.container_id)] = {}
 
     def _skill_filter(self, key):
         defaults = self.filter_container[key].get('values', [1, 3])
@@ -85,7 +84,7 @@ class PlayerFilter:
         col1.number_input("Min", value=defaults[0], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "min"), args=(key,))
         col2.number_input("Max", value=defaults[1], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "max"), args=(key,))
 
-    def _new_filter(self, key):
+    def _draw_filter(self, key):
         defaults = self.filter_container[key]
         col1, col2, col3 = st.columns([2, 5, 1])
         selected_filter_index = list(self.MAPPING.keys()).index(defaults['filter'])
@@ -113,17 +112,28 @@ class PlayerFilter:
         self.filter_container.pop(key)
 
     def _add_filter(self):
-        self.filter_container[uuid.uuid4()] = {
+        self.filter_container[str(uuid.uuid4())] = {
             "filter": "Position",
             "values": [],
         }
+
+    def _clear_filters(self):
+        st.session_state[self.container_id] = {}
+
+    def _import_filters(self):
+        pass
+
+    def _export_filters(self):
+        with open("data.json", "w") as outfile:
+            json.dump(self.search_json, outfile)
+
 
     def _key_id(self, key, value):
         return f"{self.container_id}_{key}_{value}"
 
     @property
     def filter_container(self):
-        return st.session_state[self.container_id]
+        return st.session_state[str(self.container_id)]
 
     @property
     def search_json(self):
@@ -147,10 +157,16 @@ class PlayerFilter:
         )
 
         for key in self.filter_container.keys():
-            self._new_filter(key)
+            self._draw_filter(key)
 
-        col1, col2, col3, col4 = st.columns(4)
-        col1.button("Add Filter", on_click=self._add_filter)
-        col2.button("Import Filters")
-        col3.button("Export Filters")
-        col4.button("Clear Filters")
+        col1, col2 = st.columns(2)
+        col1.button("Add", on_click=self._add_filter)
+        col2.button("Clear", on_click=self._clear_filters)
+        filter_choices = st.expander("Filter Import/Export")
+
+        with filter_choices:
+            st.write("Current Filter JSON")
+            st.json(self.search_json)
+            st.file_uploader("Import", type="json", on_change=self._import_filters)
+            st.text_input("Name")
+            st.button("Export", on_click=self._export_filters)

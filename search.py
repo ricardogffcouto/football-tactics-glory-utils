@@ -1,4 +1,5 @@
 import os
+from constants import CURRENT_PATH
 from dataclasses import dataclass
 
 import pandas as pd
@@ -50,7 +51,7 @@ def load_data(data_id):
     csv_directory = f'player_lists/{data_id}'
 
     # Get a list of all CSV files in the directory
-    csv_files = [os.path.join(csv_directory, f) for f in os.listdir(csv_directory) if f.endswith('.csv')]
+    csv_files = [os.path.join(CURRENT_PATH, csv_directory, f) for f in os.listdir(f"{CURRENT_PATH}/{csv_directory}") if f.endswith('.csv')]
 
     # Read each CSV file into a separate dataframe and store them in a list
     dataframes = [pd.read_csv(file) for file in csv_files]

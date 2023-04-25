@@ -68,27 +68,27 @@ class PlayerFilter:
             st.session_state[str(self.container_id)] = {}
 
     def _skill_filter(self, key):
-        defaults = self.filter_container[key].get('values', [1, 3])
+        defaults = self.search_json[key].get('values', [1, 3])
         col1, col2, col3 = st.columns(3)
-        col1.selectbox("", SKILLS, on_change=self._update_filter, key=self._key_id(key, "name"), args=(key,))
-        col2.number_input("Min", value=defaults[0], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=self._key_id(key, "min"), args=(key,))
-        col3.number_input("Max", value=defaults[1], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=self._key_id(key, "max"), args=(key,))
+        col1.selectbox("Skill", SKILLS, label_visibility="hidden", on_change=self._update_filter, key=self._key_id(key, "subfilter"), args=(key,))
+        col2.number_input("Min", label_visibility="hidden", value=defaults[0], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=self._key_id(key, "min"), args=(key,))
+        col3.number_input("Max", label_visibility="hidden", value=defaults[1], min_value=1, max_value=3, step=1, on_change=self._update_filter, key=self._key_id(key, "max"), args=(key,))
 
     def _is_in_filter(self, key, options):
-        default = self.filter_container[key].get('values', options[0])
-        st.multiselect("", options, default=default, on_change=self._update_filter, key=self._key_id(key, "values"), args=(key,))
+        default = self.search_json[key].get('values', options[0])
+        st.multiselect("Position", label_visibility="hidden", options=options, default=default, on_change=self._update_filter, key=self._key_id(key, "values"), args=(key,))
 
     def _min_max_filter(self, key):
-        defaults = self.filter_container[key].get('values', [1, 100])
+        defaults = self.search_json[key].get('values', [1, 100])
         col1, col2 = st.columns(2)
-        col1.number_input("Min", value=defaults[0], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "min"), args=(key,))
-        col2.number_input("Max", value=defaults[1], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "max"), args=(key,))
+        col1.number_input("Min", label_visibility="hidden", value=defaults[0], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "min"), args=(key,))
+        col2.number_input("Max", label_visibility="hidden", value=defaults[1], min_value=1, step=1, on_change=self._update_filter, key=self._key_id(key, "max"), args=(key,))
 
     def _draw_filter(self, key):
-        defaults = self.filter_container[key]
+        defaults = self.search_json[key]
         col1, col2, col3 = st.columns([2, 5, 1])
         selected_filter_index = list(self.MAPPING.keys()).index(defaults['filter'])
-        filter_name = col1.selectbox("", list(self.MAPPING.keys()), on_change=self._update_filter, key=self._key_id(key, "filter_name"), args=(key,), index=selected_filter_index)
+        filter_name = col1.selectbox("Filter Name", list(self.MAPPING.keys()), label_visibility="hidden", on_change=self._change_filter, key=self._key_id(key, "filter_name"), args=(key,), index=selected_filter_index)
         with col2:
             if filter_name == "Position":
                 self._is_in_filter(key, POSITIONS)
@@ -100,20 +100,42 @@ class PlayerFilter:
             st.button("X", on_click=self._delete_filter, args=(key,), key=self._key_id(key, "delete"))
 
     def _update_filter(self, key):
-        self.filter_container[key] = {
-            "filter": st.session_state[self._key_id(key, "filter_name")],
+        self.search_json[key] = {
+            "filter": st.session_state.get(self._key_id(key, "filter_name")),
+            "subfilter": st.session_state.get(self._key_id(key, "subfilter"), ""),
             "values": st.session_state.get(self._key_id(key, "values"), []) or [
                 st.session_state.get(self._key_id(key, "min"), 1),
                 st.session_state.get(self._key_id(key, "max"), 1),
             ]
         }
 
+    def _change_filter(self, key):
+        filter_name = st.session_state.get(self._key_id(key, "filter_name"))
+        if filter_name == "Position":
+            defaults = {
+                "values": []
+            }
+        elif filter_name == "Skill":
+            defaults = {
+                "subfilter": SKILLS[0],
+                "values": [1, 1]
+            }
+        else:
+            defaults = {
+                "values": [1, 1]
+            }
+
+        self.search_json[key] = {
+            "filter": filter_name
+        } | defaults
+
     def _delete_filter(self, key):
-        self.filter_container.pop(key)
+        self.search_json.pop(key)
 
     def _add_filter(self):
-        self.filter_container[str(uuid.uuid4())] = {
+        self.search_json[str(uuid.uuid4())] = {
             "filter": "Position",
+            "subfilter": "",
             "values": [],
         }
 
@@ -132,15 +154,8 @@ class PlayerFilter:
         return f"{self.container_id}_{key}_{value}"
 
     @property
-    def filter_container(self):
-        return st.session_state[str(self.container_id)]
-
-    @property
     def search_json(self):
-        search_json = {}
-        for key, value in self.filter_container.items():
-            search_json[self.MAPPING[value['filter']]] = value['values']
-        return search_json
+        return st.session_state[str(self.container_id)]
 
     def draw(self):
         st.markdown(
@@ -156,7 +171,7 @@ class PlayerFilter:
             unsafe_allow_html=True,
         )
 
-        for key in self.filter_container.keys():
+        for key in self.search_json.keys():
             self._draw_filter(key)
 
         col1, col2 = st.columns(2)

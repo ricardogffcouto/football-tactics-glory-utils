@@ -67,12 +67,6 @@ def parse_teams(batch_size=500, team_amount=None, resume=False):
         team = TeamParser(
             team_id=team_id,
             session_id=SESSION_ID,
-            config={
-                "filter_players": {
-                    "pos": ["M", "MF", "F", "FW"],
-                    "lvl": [50, 100],
-                }
-            }
         )
         players += team.parse_players()
         percentage_done = int((i+1)*100/len(teams_to_parse))

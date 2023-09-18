@@ -196,7 +196,7 @@ slide_long_json = {
 mf_slide_json = {
     "skills": [{
         "name": Skill.SLIDE_TACKLE,
-        "min": 3,
+        "min": 2,
         "max": 3,
     }],
     "pos": ["M", "MF", "FW"]
@@ -236,9 +236,23 @@ rf_lf_ctr_acc_json = {
     "acc": [80, 300],
 }
 
-current_filter = gk_skills_json
+mf_fw_ctr_slide_can = {
+    "pos": ["M", "F", "MF", "FW"],
+    "ctr": [90, 300],
+    "skills": [{
+        "name": Skill.SLIDE_TACKLE,
+        "min": 1,
+        "max": 3,
+    }, {
+        "name": Skill.CANNON_KICK,
+        "min": 1,
+        "max": 3,
+    }],
+}
 
-data_id = "2032-07"
+current_filter = mf_fw_ctr_slide_can
+
+data_id = "2033-02"
 
 df = load_data(data_id)
 filtered_df = Filter().apply(df, current_filter)
@@ -246,12 +260,11 @@ filtered_df = Filter().apply(df, current_filter)
 view_df = view_dataframe(filtered_df)
 
 shortlist = [
-    "f2f19df7-da29-4943-9c47-5495fc1ea9b4",
 ]
 
 shortlist_df = df[df["id"].isin(shortlist)]
 
-run_ocr = False
+run_ocr = True
 if run_ocr:
     reader = easyocr.Reader(['en'])
 
